@@ -181,17 +181,6 @@ python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
 Open **http://localhost:8000**, upload any CSV/JSON from `datasets/`, click **Build Models**, then start typing to search.
 
-### Bulk Import (optional)
-
-```bash
-python scripts/import_to_supabase.py --file datasets/Books.csv --batch-size 2000
-python scripts/seed_mock_data.py --users 50 --purchases 2000
-```
-
-> Requires `SUPABASE_SERVICE_KEY` in `.env`
-
----
-
 ## 06 — API Reference
 
 ```
