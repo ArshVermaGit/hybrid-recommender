@@ -659,17 +659,34 @@ function bindEvents() {
         progressBar.style.width = width + "%";
     });
 }
-
-
 // ── CSS spin animation ──────────────────────────────────────────────
 const spinStyle = document.createElement('style');
 spinStyle.textContent = `@keyframes spin { to { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`;
 document.head.appendChild(spinStyle);
 
+// ── Back To Top ─────────────────────────────────────────────────────
+function initBackToTop() {
+    const backToTop = document.getElementById('backToTop');
+
+    if (!backToTop) return;
+
+    
+    backToTop.style.display = 'none';
+
+    window.addEventListener('scroll', () => {
+        backToTop.style.display =
+            window.scrollY > 700 ? 'block' : 'none';
+    });
+
+    backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+}
 // ── Init ────────────────────────────────────────────────────────────
 async function init() {
     bindEvents();
     initTypeToSearch();
+    initBackToTop();
 
     // Initialize Supabase client from backend config (no hardcoded keys)
     await initSupabase();
@@ -678,5 +695,4 @@ async function init() {
     initAuth().catch((e) => console.warn('Auth error:', e));
     checkStatus().catch((e) => console.warn('Status error:', e));
 }
-
 document.addEventListener('DOMContentLoaded', init);
