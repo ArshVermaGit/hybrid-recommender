@@ -455,7 +455,7 @@ async function loadRecommendations(title) {
     els.recsStrip.innerHTML = '';
 
     try {
-        const data = await API.get(`/api/recommend/${encodeURIComponent(title)}?top_n=12`);
+        const data = await API.get(`/api/recommend?title=${encodeURIComponent(title)}&top_n=12`);
         const recs = data.recommendations || [];
 
         els.recsLoader.hidden = true;
