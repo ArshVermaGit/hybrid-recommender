@@ -778,20 +778,17 @@ function renderProducts(products, append) {
         }
 
         // Click → get recommendations
-        card.querySelector('.wishlist-btn').addEventListener('click', (e) => {
+        card.querySelector('.btn--add-cart').addEventListener('click', (e) => {
+            const wishlistBtn = card.querySelector('.wishlist-btn');
+
+            wishlistBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleWishlist(p);
-        });
-
-        card.querySelector('.btn--add-cart').addEventListener('click', (e) => {
-        const title = e.target.dataset.title;
-
-        loadRecommendations(title);
-
-        toast(
-            `Finding recommendations for "${title.substring(0, 40)}..."`,
-            'info'
-            );
+            });
+    
+            const title = e.target.dataset.title;
+            loadRecommendations(title);
+            toast(`Finding recommendations for "${title.substring(0, 40)}..."`, 'info');
         });
 
         // Compare checkbox
@@ -1059,17 +1056,6 @@ async function handleWeightChange() {
         await API.put('/api/weights', { alpha: a / 100, beta: b / 100, gamma: g / 100 });
     } catch {}
 }
-
-function savePreferences() {
-    localStorage.setItem(
-        'userPreferences',
-        JSON.stringify(state.filters)
-    );
-
-    toast('Preferences saved', 'success');
-}
-
-const debouncedSavePreferences = debounce(savePreferences, 500);
 
 function populateCategoryFilter(products) {
 

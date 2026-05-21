@@ -47,6 +47,9 @@ from collaborative_model import CollaborativeRecommender
 from hybrid_model import HybridRecommender
 from ab_testing import DEFAULT_EXPERIMENT_ID, run_recommendation_experiment
 
+from functools import lru_cache
+from datetime import datetime, timedelta
+
 # ── App ──────────────────────────────────────────────────────────────
 app = FastAPI(title="Hybrid Recommender API", version="3.0")
 
@@ -208,6 +211,10 @@ models = {
     "item_df": None,
     "build_time": None,
     "last_trained_at": None,
+}
+TRENDING_CACHE = {
+    "data": None,
+    "timestamp": None
 }
 
 trending_cache = {}
