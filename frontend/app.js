@@ -91,10 +91,6 @@ const els = {
     ratingFilter: $('rating-filter'),
     sentimentFilter: $('sentiment-filter'),
     clearFiltersBtn: $('clear-filters'),
-    minPriceSlider: $('min-price'),
-    maxPriceSlider: $('max-price'),
-    minPriceValue: $('min-price-value'),
-    maxPriceValue: $('max-price-value'),
 };
 
 function loadPreferences() {
@@ -197,18 +193,11 @@ function applyFilters(products) {
         const matchesSentiment =
             !state.filters.sentiment ||
             sentiment === state.filters.sentiment;
-        
-        const price = Number(p.price || 0);
-
-        const matchesPrice =
-        price >= state.filters.minPrice &&
-        price <= state.filters.maxPrice;
 
         return (
             matchesCategory &&
             matchesRating &&
-            matchesSentiment &&
-            matchesPrice
+            matchesSentiment
         );
     });
 }
@@ -228,17 +217,35 @@ function categoryIcon(cat) {
     return '📦';
 }
 
-// ── Meta Tags ───────────────────────────────────────────────────────
-// ── Meta Tags ───────────────────────────────────────────────────────
-function setPageMeta(title, description) {
-    const fullTitle = title ? `${title} | HybridRec` : 'HybridRec — Smart Recommendations';
-    document.title = fullTitle;
-    const descTag = document.querySelector('meta[name="description"]');
-    if (descTag) descTag.content = description;
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.content = fullTitle;
-    const ogDesc = document.querySelector('meta[property="og:description"]');
-    if (ogDesc) ogDesc.content = description;
+// ── Wishlist ────────────────────────────────────────────────────────
+function getWishlist() {
+    return JSON.parse(localStorage.getItem('wishlist')) || [];
+}
+
+function saveWishlist(items) {
+    localStorage.setItem('wishlist', JSON.stringify(items));
+}
+
+function isWishlisted(title) {
+    return getWishlist().some(item => item.title === title);
+}
+
+function toggleWishlist(product) {
+    let wishlist = getWishlist();
+
+    const exists = wishlist.some(item => item.title === product.title);
+
+    if (exists) {
+        wishlist = wishlist.filter(item => item.title !== product.title);
+        toast('Removed from wishlist', 'info');
+    } else {
+        wishlist.push(product);
+        toast('Added to wishlist', 'success');
+    }
+
+    saveWishlist(wishlist);
+
+    renderProducts(state.allProducts, false);
 }
 
 // ── API Helpers ─────────────────────────────────────────────────────
@@ -1063,32 +1070,6 @@ function savePreferences() {
 }
 
 const debouncedSavePreferences = debounce(savePreferences, 500);
-function updatePriceLabels() {
-    els.minPriceValue.textContent = `₹${state.filters.minPrice}`;
-    els.maxPriceValue.textContent = `₹${state.filters.maxPrice}`;
-}
-
-function handlePriceChange() {
-
-    let minVal = parseInt(els.minPriceSlider.value);
-    let maxVal = parseInt(els.maxPriceSlider.value);
-
-    if (minVal > maxVal) {
-        [minVal, maxVal] = [maxVal, minVal];
-    }
-
-    state.filters.minPrice = minVal;
-    state.filters.maxPrice = maxVal;
-
-    els.minPriceSlider.value = minVal;
-    els.maxPriceSlider.value = maxVal;
-
-    updatePriceLabels();
-
-    renderProducts(state.allProducts, false);
-
-    debouncedSavePreferences();
-}
 
 function populateCategoryFilter(products) {
 
@@ -1330,6 +1311,28 @@ async function init() {
 // Debounce helper
 function debounce(func, delay) {
   let timeout;
+
+  return function (...args) {
+    clearTimeout(timeout);
+
+    timeout = setTimeout(() => {
+      func.apply(this, args);
+    }, delay);
+  };
+}
+
+els.categoryFilter.addEventListener('change', (e) => {
+    state.filters.category = e.target.value;
+
+    renderProducts(state.allProducts, false);
+
+    debouncedSavePreferences();
+});
+
+document.addEventListener('DOMContentLoaded', init);
+async function sendFeedback(item, feedback, button) {
+
+    const storageKey = `feedback_${item}`;
 
   return function (...args) {
     clearTimeout(timeout);
