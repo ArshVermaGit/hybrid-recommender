@@ -2,18 +2,46 @@
 const themeToggle = document.getElementById('theme-toggle');
 const root = document.documentElement;
 
-// Load saved preference or default to dark
-const savedTheme = localStorage.getItem('theme') || 'dark';
-root.setAttribute('data-theme', savedTheme);
-themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+function initThemeToggle() {
+  if (!themeToggle) return;
 
-themeToggle.addEventListener('click', () => {
-  const current = root.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-  root.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-  themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
-});
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+
+  root.setAttribute('data-theme', savedTheme);
+  themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+  themeToggle.setAttribute(
+    'aria-label',
+    savedTheme === 'dark'
+      ? 'Switch to light mode'
+      : 'Switch to dark mode'
+  );
+
+  themeToggle.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+
+    themeToggle.setAttribute(
+      'aria-label',
+      next === 'dark'
+        ? 'Switch to light mode'
+        : 'Switch to dark mode'
+    );
+  });
+
+  themeToggle.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      themeToggle.click();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initThemeToggle);
 /**
  * HybridRec — Frontend Application v3
  * Supabase Auth + PostgreSQL FTS Search + Modern UI
