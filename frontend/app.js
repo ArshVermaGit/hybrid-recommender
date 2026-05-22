@@ -1,3 +1,19 @@
+// ===== THEME TOGGLE =====
+const themeToggle = document.getElementById('theme-toggle');
+const root = document.documentElement;
+
+// Load saved preference or default to dark
+const savedTheme = localStorage.getItem('theme') || 'dark';
+root.setAttribute('data-theme', savedTheme);
+themeToggle.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+
+themeToggle.addEventListener('click', () => {
+  const current = root.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  themeToggle.textContent = next === 'dark' ? '🌙' : '☀️';
+});
 /**
  * HybridRec — Frontend Application v3
  * Supabase Auth + PostgreSQL FTS Search + Modern UI
@@ -21,6 +37,7 @@ async function initSupabase() {
     }
     return sbClient;
 }
+
 
 // ── State ───────────────────────────────────────────────────────────
 const state = {
@@ -962,9 +979,14 @@ function renderRecommendations(data) {
     els.recsStrip.hidden = false;
 
     if (!recs.length) {
-        els.recsStrip.innerHTML = '<div style="padding:16px;color:var(--text-muted);">No recommendations found.</div>';
-        return;
-    }
+    els.recsStrip.innerHTML = `
+        <div class="empty-recommendations">
+            <span class="empty-icon" aria-hidden="true">🔍</span>
+            <p>No recommendations found. Try a different product!</p>
+        </div>
+    `;
+    return;
+}
 
     els.recsStrip.innerHTML = recs.map((r) => `
         <div class="rec-card" data-title="${r.title}">
@@ -1015,9 +1037,14 @@ async function loadRecommendations(title) {
         els.recsStrip.hidden = false;
 
         if (!recs.length) {
-            els.recsStrip.innerHTML = '<div style="padding:16px;color:var(--text-muted);">No recommendations found.</div>';
-            return;
-        }
+    els.recsStrip.innerHTML = `
+        <div class="empty-recommendations">
+            <span class="empty-icon" aria-hidden="true">🔍</span>
+            <p>No recommendations found. Try a different product!</p>
+        </div>
+    `;
+    return;
+}
     } catch {
         try {
             await loadRecommendationsOverHttp(title);
