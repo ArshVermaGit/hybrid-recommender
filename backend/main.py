@@ -9,7 +9,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from fastapi import FastAPI, UploadFile, File, HTTPException, Query
+from fastapi import FastAPI, UploadFile, File, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -344,6 +344,56 @@ def get_recommendations(item_title: str, top_n: int = 10):
         "query_item": item_title,
         "recommendations": recs,
         "weights": models["hybrid"].get_weights(),
+    }
+
+
+# ── Semantic Search (pgvector) ──────────────────────────────────────
+_semantic_model = None
+
+def get_semantic_model():
+    global _semantic_model
+    if _semantic_model is None:
+        from sentence_transformers import SentenceTransformer
+        _semantic_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return _semantic_model
+
+@app.get("/api/semantic-search")
+def semantic_search(request: Request, query: str, limit: int = Query(20, ge=1, le=100)):
+    """
+    Semantic search using pgvector.
+    Accepts a query string, returns products ordered by cosine similarity.
+    """
+    if not query.strip():
+        return {"query": query, "results": []}
+
+    model = get_semantic_model()
+    query_embedding = model.encode(query.strip()).tolist()
+
+    sb = get_supabase()
+    try:
+        result = sb.rpc('semantic_search', {
+            'query_embedding': query_embedding,
+            'match_limit': limit
+        }).execute()
+        results = result.data or []
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Semantic search failed: {str(e)}")
+
+    formatted = []
+    for row in results:
+        formatted.append({
+            "id": row.get("id"),
+            "title": row.get("title"),
+            "description": row.get("description", ""),
+            "category": row.get("category", ""),
+            "rating": row.get("rating", 0.0),
+            "similarity_score": round(row.get("similarity", 0.0), 4),
+        })
+
+    return {
+        "query": query,
+        "results": formatted,
+        "total": len(formatted),
     }
 
 
