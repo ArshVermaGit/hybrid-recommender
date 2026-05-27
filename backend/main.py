@@ -1025,12 +1025,12 @@ def train_federated(req: FederatedTrainRequest):
 @app.get("/api/recommend")
 @app.get("/api/recommend/{item_title}")
 def get_recommendations(
-    request: Request,               # added for rate limiting
     response: Response,
     item_title: Optional[str] = None,
     title: Optional[str] = Query(None),
     top_n: int = 10,
     explain: bool = Query(False),
+    user_id: Optional[str] = Query(None),
     target_catalog: Optional[str] = Query(None),
     strategy: Optional[str] = Query(None), 
 ):
@@ -1040,14 +1040,14 @@ def get_recommendations(
     if not query_title:
         raise HTTPException(422, "Query parameter 'title' is required.")
 
-    cache_key = _cache_key("recommend", query_title, top_n, explain, target_catalog)
+    cache_key = _cache_key("recommend", query_title, top_n, explain, user_id or "")
     cached = _get_cached_response(cache_key)
     if cached is not None:
         _set_cache_headers(response, "HIT")
         return cached
 
     recs = models["hybrid"].recommend(
-        query_title, top_n=top_n, explain=explain, target_catalog=target_catalog
+        query_title, user_id=user_id, top_n=top_n, explain=explain
     )
   
     if not recs and strategy == "popularity" and models["collab"]:
@@ -1057,15 +1057,16 @@ def get_recommendations(
     if not recs:
         raise HTTPException(404, "Item not found or no recommendations.")
 
+    has_history = False
+    if user_id and models.get("collab") is not None:
+        has_history = user_id in models["collab"]._user_to_idx
+
     payload = {
-        "results": recs,
-        "count": len(recs),
-        "query": query_title,
         "query_item": query_title,
         "recommendations": recs,
         "weights": models["hybrid"].get_weights(),
         "explain": explain,
-        "target_catalog": target_catalog,
+        "has_history": has_history,
     }
     _set_cached_response(cache_key, payload)
     _set_cache_headers(response, "MISS")
