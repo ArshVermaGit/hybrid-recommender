@@ -103,6 +103,11 @@ class HybridRecommender:
             )
             self._causal_config = None
 
+        # Initialize fairness parameters
+        self.fairness_enabled = False
+        self.fairness_key = 'category'
+        self.fairness_max_share = 1.0
+
         # Build sentiment + rating lookups
         self._sentiment_map = {}
         self._rating_map = {}
