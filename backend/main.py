@@ -60,46 +60,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="[%(levelname)s] %(asctime)s - %(message)s",
-)
-logger = logging.getLogger(__name__)
-
-from celery.result import AsyncResult
-from celery_app import celery_app
-from tasks import compute_recommendations
-
-
-# backend/main.py — corrected imports
-from src.data.db import get_supabase, get_supabase_admin
-from src.data.data_adapter import adapt_data, read_file
-from src.model.nlp_engine import batch_analyze, aggregate_sentiment_by_item
-from src.model.content_model import ContentRecommender
-from src.model.collaborative_model import CollaborativeRecommender
-from src.model.hybrid_model import HybridRecommender
-from src.model.issue_triage import triage_issue
-from src.model.federated_learning import train_federated_collaborative_model
-
-from functools import lru_cache
-
-from backend.csrf import CSRFMiddleware, generate_csrf_token, set_csrf_cookie, CSRFTokenResponse
-
-
-# ── OpenAPI CSRF header dependency ────────────────────────────────────
-async def csrf_header_dep(
-    x_csrf_token: str = Header(
-        ...,
-        alias="X-CSRF-Token",
-        description=(
-            "CSRF token obtained from **GET /api/csrf-token**. "
-            "Required on all state-mutating requests (POST / PUT / PATCH / DELETE). "
-            "Must match the value stored in the `csrftoken` cookie."
-        ),
-    ),
-) -> None:
-    """Declares X-CSRF-Token in OpenAPI. Enforcement is done by CSRFMiddleware."""
-    pass
+from db import get_supabase, get_supabase_admin
+from backend.auth import _require_admin_access
+from data_adapter import adapt_data, read_file
+from nlp_engine import batch_analyze, aggregate_sentiment_by_item
+from content_model import ContentRecommender
+from collaborative_model import CollaborativeRecommender
+from hybrid_model import HybridRecommender
 
 # ── App ──────────────────────────────────────────────────────────────
 app = FastAPI(title="Hybrid Recommender API", version="3.0")
@@ -1065,6 +1032,10 @@ def _validate_upload_bytes(filename: str, ext: str, contents: bytes) -> None:
 @app.post("/api/upload")
 async def upload_dataset(
     file: UploadFile = File(...),
+    admin=Depends(_require_admin_access)
+):
+    """Upload a CSV or JSON dataset and import into Supabase."""
+    import math
     _csrf: None = Depends(csrf_header_dep),
 ):
     filename = file.filename or "data.csv"
