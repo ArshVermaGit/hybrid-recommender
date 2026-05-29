@@ -84,3 +84,53 @@ class TestPropensityModelSpec:
         assert summary['n_items'] == 4
         assert summary['mean'] > 0
         assert summary['min'] <= summary['max']
+
+    def test_propensity_nan_values(self):
+        df = pd.DataFrame({
+            'title': ['A', 'B', 'C'],
+            'review_count': [100, None, np.nan],
+            'category': ['Tech', None, np.nan]
+        })
+        pm = PropensityModel(df)
+        scores = pm.all_scores()
+        assert len(scores) == 3
+        # Should not raise errors and have positive scores
+        assert scores['A'] > 0
+        assert scores['B'] > 0
+        assert scores['C'] > 0
+
+    def test_propensity_empty_strings(self):
+        df = pd.DataFrame({
+            'title': ['A', 'B', ''],
+            'review_count': [10, 20, 30],
+            'category': ['', '   ', 'Tech']
+        })
+        pm = PropensityModel(df)
+        scores = pm.all_scores()
+        assert scores['A'] > 0
+        assert scores['B'] > 0
+
+    def test_propensity_negative_reviews(self):
+        df = pd.DataFrame({
+            'title': ['A', 'B'],
+            'review_count': [-100, 0],
+            'category': ['Tech', 'Art']
+        })
+        pm = PropensityModel(df)
+        scores = pm.all_scores()
+        # Non-positive review counts are clipped to min=0/positive values
+        assert scores['A'] > 0
+        assert scores['B'] > 0
+
+    def test_propensity_extreme_reviews(self):
+        df = pd.DataFrame({
+            'title': ['A', 'B'],
+            'review_count': [1000000000, 1],
+            'category': ['Tech', 'Art']
+        })
+        pm = PropensityModel(df)
+        scores = pm.all_scores()
+        # Item with 1 billion reviews should not break normalization and have vastly higher score
+        assert scores['A'] > scores['B']
+        assert pm.get_ips_weight('A') < pm.get_ips_weight('B')
+
